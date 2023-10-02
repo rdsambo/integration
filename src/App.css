@@ -1,0 +1,53 @@
+#root {
+  width: 90%;
+  margin: auto;
+}
+.container {
+  background-color: white;
+  display: flex;
+  box-shadow: 0 3px 10px rgb(0 0 0 / 0.2);
+  margin: 20px;
+  border-radius:5px;
+  padding: 20px !important;
+}
+.settings {
+  width: 30%;
+}
+.displayTable {
+  position: relative;
+  width: 70%;
+  border-left: 1px solid gray;
+  margin-left: 20px;
+  padding-left: 20px;
+}
+.form {
+  padding-left:10px;
+  padding-right:10px;
+  border-radius:5px;
+}
+.code {
+  border-top: 1px solid gray;
+  color: black;
+  margin-top: 10px;
+  /* padding-top: 0; */
+  /* width: 100%;
+  box-shadow: 0 3px 10px rgb(0 0 0 / 0.2);
+  border-radius:5px;
+  padding: 0 10px;
+  overflow: hidden;
+  margin-bottom: 1rem;
+  margin-top: 1rem;
+  justify-content: start; */
+}
+.h6 {
+  padding-top: 5px;
+  margin-top: 2px;
+  margin-bottom: 10px;
+  text-align: center;
+  color: black;
+  /* margin: 0;
+  padding-bottom: 0;
+  margin-bottom: -20px!important;
+  font-size: 1rem;
+   */
+}
