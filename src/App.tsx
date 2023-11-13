@@ -8,6 +8,9 @@ import * as S from './App.styles';
 import dayjs from 'dayjs';
 import type { RangePickerProps } from 'antd/es/date-picker';
 import {CopyToClipboard} from 'react-copy-to-clipboard';
+import type { RadioChangeEvent } from 'antd';
+import { Radio } from 'antd';
+import Chart from 'chart.js/auto';
 
 const { RangePicker } = DatePicker;
 
@@ -42,6 +45,29 @@ function App() {
   const [form] = Form.useForm();
   const selectRef = useRef();
   const [dataTemp, setDataTemp] = useState();
+
+  const [radioValue, setRadioValue] = useState('Tabela');
+  const [myChart, setMyChart] = useState();
+
+  const makeid = (length: number) => {
+    let result = '';
+    const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    const charactersLength = characters.length;
+    let counter = 0;
+    while (counter < length) {
+      result += characters.charAt(Math.floor(Math.random() * charactersLength));
+      counter += 1;
+    }
+    return result;
+  }
+
+  const options = [
+    { label: 'Tabela', value: 'Tabela' },
+    { label: 'Linha', value: 'Linha' },
+    { label: 'Barra', value: 'Barra' },
+    { label: 'Pie', value: 'Pie' },
+  ];
+
   useEffect(() => {
     if(copied != 0){
       setShowCopied(true);
@@ -75,7 +101,6 @@ function App() {
                   if(Array.isArray(columns)){
                     startD = new dayjs(item.startDate);
                     endD = new dayjs(item.endDate);
-                    console.log();
                     setStartDate(startD);
                     setStartDateBase(startD);
                     setEndDate(endD);
@@ -176,7 +201,14 @@ function App() {
       let columnsHeader = variacoes.filter((param) => param.orientation == 'C');
       let linesHeader = variacoes.filter((param) => param.orientation == 'L');
       let bodyIDs: any[] = [];
+      let labelLItems: any[] = [];
+      let datasetsItems: any[] = [];
 
+      let horizontalLength = 1;
+      for (let i = 0; i < columnsHeader.length; i++) {
+          horizontalLength *= columnsHeader[i].variations.length;
+      }
+      
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const DisplayHeaderColumnsIterativly = (() => {
         let headerLines: any[] = [columnsHeader.length];
@@ -206,16 +238,13 @@ function App() {
         });
         return stringJoin;
       });
-  
-      let horizontalLength = 1;
-      for (let i = 0; i < columnsHeader.length; i++) {
-          horizontalLength *= columnsHeader[i].variations.length;
-      }
 
       const columnIndexIDs = (level, acomulado, count) => {
         let partID;
+        let label;
         partID = false;
         let countL = acomulado;
+        let index = 0;
         columnsHeader[level].variationsID.forEach((item) => {
           if(countL == count){
             if(level + 1 < columnsHeader.length){
@@ -223,9 +252,11 @@ function App() {
               countL = result.countL;
               if(result.partID){
                 partID = item + '_' + result.partID;
+                label = columnsHeader[level].variations[index] + '-' + result.label;
               }
             } else {
               partID =  item;
+              label = columnsHeader[level].variations[index];
               countL++;
             }
           } else {
@@ -234,13 +265,15 @@ function App() {
               countL = result.countL;
               if(result.partID) {
                 partID = item + '_' + result.partID;
+                label = columnsHeader[level].variations[index] + '-' + result.label;
               }
             } else {
               countL++;
             }  
           }
+          index++;
         });
-        return {partID: partID, countL:countL};
+        return {label: label, partID: partID, countL:countL};
       }
       
       const GenerateBody = (() => {
@@ -252,16 +285,20 @@ function App() {
           repeticoes *= element.variations.length;
         });
         let lineItems: any[] = [repeticoes];
-        
+        let dataSetLabel: any = {};
         for (let i = 0; i < repeticoes; i++) {
           let partID = "";
+          let labelL = "";
           lineItems[i] = "<tr>";
 
           for (let x = 0; x < linesHeader.length; x++) {
             let canPrint = true;
             partID += linesHeader[x].variationsID[lineV[x]];
-            if(x < linesHeader.length - 1)
+            labelL += linesHeader[x].variations[lineV[x]];
+            if(x < linesHeader.length - 1){
               partID += '_';
+              labelL += '-';
+            }
             for (let j = x + 1; j < lineV.length; j++) {
               if(lineV[j] != 0)
               canPrint = false;
@@ -277,14 +314,30 @@ function App() {
                 lineV[x] = 0;
             }
           }
-
-            for (let horizontalIndex = 0; horizontalIndex < horizontalLength; horizontalIndex++) {
-              const cIds = columnIndexIDs(0, 0, horizontalIndex).partID + '';
-              bodyIDs = [...bodyIDs, { lineIds: partID != '' ? partID.split('_') : [], columnIds: cIds.split('_') }];
-              lineItems[i] += "<td id=\""+(partID + '-' + cIds)+"\"></td>";
+          
+          let ids: any[] = [];
+          for (let horizontalIndex = 0; horizontalIndex < horizontalLength; horizontalIndex++) {
+            const result = columnIndexIDs(0, 0, horizontalIndex);
+            if(i == 0) {
+              labelLItems = [...labelLItems, result.label];
             }
+            const cIds = result.partID + '';
+            ids = [...ids, { lineIds: partID != '' ? partID.split('_') : [], columnIds: cIds.split('_') }];
+            bodyIDs = [...bodyIDs, { lineIds: partID != '' ? partID.split('_') : [], columnIds: cIds.split('_') }];
+            lineItems[i] += "<td id=\""+(partID + '-' + cIds)+"\"></td>";
+            // datasets: [{
+              // label: '# of Votes',
+              // data: [12, 19, 3, 5, 2, 3],
+              // : 
+            // }]
+          }
+          dataSetLabel.label = labelL;
+          dataSetLabel.borderWidth = 1;
+          dataSetLabel.ids = ids;
+          datasetsItems = [...datasetsItems, {...dataSetLabel}];
+          
           lineItems[i] += "</tr>";
-        }; 
+        };
 
         let line = "";
         lineItems.forEach(item => line += item);
@@ -292,92 +345,314 @@ function App() {
       });
 
       let header = DisplayHeaderColumnsIterativly();
-      header = "<thead>" + header + "</thead>";
       
       let body = GenerateBody();
-      body = "<tbody>" + body + "</tbody>";
-      const table = "<table id=\"customers\">" + header + body +"</table>\n";
+      if(myChart){
+          myChart.clear();
+          myChart.destroy();
+      }
+      switch(radioValue){
+        case 'Tabela':
+          header = "<thead>" + header + "</thead>";
+          body = "<tbody>" + body + "</tbody>";
+          const table = "<table id=\"customers\">" + header + body +"</table>\n";
 
-        const scriptStr = 
-        "<script>" +
-          "const xhr = new XMLHttpRequest();" +
-          "const url = '" + url + "';" +
-          "let yearBase = " + startDateBase.year() + ";" +
-          "const bodyIDs = " + JSON.stringify(bodyIDs) + ";" +
-          "const linesHeader = " + JSON.stringify(linesHeader) + ";" +
-          "const columnsHeader = " + JSON.stringify(columnsHeader) + ";" +
-          "xhr.open('GET', url, true);" +
-          "xhr.onreadystatechange = function () {" +
-            "if (this.readyState == 4 && this.status == 200) {" +
-              "const res = JSON.parse(this.responseText);" +
-              "bodyIDs.forEach(cell => {" +
-                "let filteredData = [...res.data];" +
-                "if(Array.isArray(cell.lineIds)){" +
-                  "for (let i = 0; i < cell.lineIds.length; i++) {" +
-                    "if (linesHeader[i].name != 'Tempo') {" +
-                      "filteredData = filteredData.filter((item) => item[linesHeader[i].name].id == cell.lineIds[i]);" +
-                    "} else {" +
-                      "date = cell.lineIds[i];" +
+            const scriptStr = 
+            "<script>" +
+              "const xhr = new XMLHttpRequest();" +
+              "const url = '" + url + "';" +
+              "let yearBase = " + startDateBase.year() + ";" +
+              "const bodyIDs = " + JSON.stringify(bodyIDs) + ";" +
+              "const linesHeader = " + JSON.stringify(linesHeader) + ";" +
+              "const columnsHeader = " + JSON.stringify(columnsHeader) + ";" +
+              "xhr.open('GET', url, true);" +
+              "xhr.onreadystatechange = function () {" +
+                "if (this.readyState == 4 && this.status == 200) {" +
+                  "const res = JSON.parse(this.responseText);" +
+                  "bodyIDs.forEach(cell => {" +
+                    "let filteredData = [...res.data];" +
+                    "if(Array.isArray(cell.lineIds)){" +
+                      "for (let i = 0; i < cell.lineIds.length; i++) {" +
+                        "if (linesHeader[i].name != 'Tempo') {" +
+                          "filteredData = filteredData.filter((item) => item[linesHeader[i].name].id == cell.lineIds[i]);" +
+                        "} else {" +
+                          "date = cell.lineIds[i];" +
+                        "}" +
+                      "}" +
                     "}" +
-                  "}" +
-                "}" +
-                "if(Array.isArray(cell.columnIds)){" +
-                  "for (let i = 0; i < cell.columnIds.length; i++){" +
-                    "if (columnsHeader[i].name != 'Tempo') {" +
-                      "filteredData = filteredData.filter((item) => item[columnsHeader[i].name].id == cell.columnIds[i]);" +
-                    "} else {" +
-                      "date = cell.columnIds[i];" +
+                    "if(Array.isArray(cell.columnIds)){" +
+                      "for (let i = 0; i < cell.columnIds.length; i++){" +
+                        "if (columnsHeader[i].name != 'Tempo') {" +
+                          "filteredData = filteredData.filter((item) => item[columnsHeader[i].name].id == cell.columnIds[i]);" +
+                        "} else {" +
+                          "date = cell.columnIds[i];" +
+                        "}" +
+                      "}" +
+                      
                     "}" +
-                  "}" +
-                  
+                    "const value = filteredData[0].values[date - yearBase];" +
+                    "const cellID = cell.lineIds.join('_') + '-' + cell.columnIds.join('_');" +
+                    "const cellDOM = document.getElementById(cellID);" +
+                    "cellDOM.innerHTML = value;" +
+                  "})" +
                 "}" +
-                "const value = filteredData[0].values[date - yearBase];" +
-                "const cellID = cell.lineIds.join('_') + '-' + cell.columnIds.join('_');" +
-                "const cellDOM = document.getElementById(cellID);" +
-                "cellDOM.innerHTML = value;" +
-              "})" +
-            "}" +
-          "};" +
-          "xhr.send();" +
-        "</script>";
+              "};" +
+              "xhr.send();" +
+            "</script>";
 
-        const styles = "<style>.shadow{box-shadow: 0 3px 10px rgb(0 0 0 / 0.2);border-radius:5px;padding:10px;min-height:330px;}#customers{font-family: Arial, Helvetica, sans-serif;border-collapse: collapse;width: 100%;}#customers td {color: #000}#customers td, #customers th {border: 1px solid #ddd;padding: 8px;}#customers tr:nth-child(even){background-color: #f2f2f2;}#customers tr:hover {background-color: #ddd;}#customers th {padding-top: 12px;padding-bottom: 12px;text-align: left;background-color: #dc322c;color: white;}@media only screen and (max-width: 450px){#customers td, #customers th{font-size:9px;}.shadow{min-height:0px;}}.card {box-shadow: 0 4px 8px 0 rgba(0,0,0,0.2);transition: 0.3s;width: 100%;}.card:hover {box-shadow: 0 8px 16px 0 rgba(0,0,0,0.2);}</style>\n";
-        setTableToCopy(table +  styles + scriptStr);
-        setTableDisplay(table + styles);
-        setTimeout(
-          () => {
-          let yearBase = startDateBase.year();
-          bodyIDs.forEach(cell => {
-            let date = 0;
-            let filteredData = [...dataTemp];
-            if(Array.isArray(cell.lineIds)){
-              for (let i = 0; i < cell.lineIds.length; i++) {
-                if (linesHeader[i].name != 'Tempo') {
-                  filteredData = filteredData.filter((item) => item[linesHeader[i].name].id == cell.lineIds[i]);
-                } else {
-                  date = cell.lineIds[i];
+            const styles = "<style>.shadow{box-shadow: 0 3px 10px rgb(0 0 0 / 0.2);border-radius:5px;padding:10px;min-height:330px;}#customers{font-family: Arial, Helvetica, sans-serif;border-collapse: collapse;width: 100%;}#customers td {color: #000}#customers td, #customers th {border: 1px solid #ddd;padding: 8px;}#customers tr:nth-child(even){background-color: #f2f2f2;}#customers tr:hover {background-color: #ddd;}#customers th {padding-top: 12px;padding-bottom: 12px;text-align: left;background-color: #dc322c;color: white;}@media only screen and (max-width: 450px){#customers td, #customers th{font-size:9px;}.shadow{min-height:0px;}}.card {box-shadow: 0 4px 8px 0 rgba(0,0,0,0.2);transition: 0.3s;width: 100%;}.card:hover {box-shadow: 0 8px 16px 0 rgba(0,0,0,0.2);}</style>\n";
+            setTableToCopy(table +  styles + scriptStr);
+            setTableDisplay(table + styles);
+            setMyChart(null);
+            setTimeout(
+              () => {
+              let yearBase = startDateBase.year();
+              bodyIDs.forEach(cell => {
+                let date = 0;
+                let filteredData = [...dataTemp];
+                if(Array.isArray(cell.lineIds)){
+                  for (let i = 0; i < cell.lineIds.length; i++) {
+                    if (linesHeader[i].name != 'Tempo') {
+                      filteredData = filteredData.filter((item) => item[linesHeader[i].name].id == cell.lineIds[i]);
+                    } else {
+                      date = cell.lineIds[i];
+                    }
+                  }
+                }
+                if(Array.isArray(cell.columnIds)){
+                  for (let i = 0; i < cell.columnIds.length; i++){
+                    if (columnsHeader[i].name != 'Tempo') {
+                      filteredData = filteredData.filter((item) => item[columnsHeader[i].name].id == cell.columnIds[i]);
+                    } else {
+                      date = cell.columnIds[i];
+                    }
+                  }
+                }
+                const value = filteredData[0].values[date - yearBase];
+                const cellID = cell.lineIds.join('_') + '-' + cell.columnIds.join('_');
+                const cellDOM: any = document.getElementById(cellID);
+                cellDOM.innerHTML = value;
+              })
+            }
+            , 100);
+          break;
+        case 'Linha':
+          const chartIdLine = makeid(10);
+          const htmlLine = "<canvas id="+chartIdLine+"></canvas>";
+
+          let scriptLine = '<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>';
+          setTableToCopy(htmlLine + scriptLine);
+          setTableDisplay(htmlLine);
+          setTimeout(
+            () => {
+            let yearBase = startDateBase.year();
+            let datasetsCmp: any[] = datasetsItems.map(dataSet => {
+              let date = 0;
+              let data: any[] = [];
+              dataSet.ids.map((cell: any) => {
+                let filteredData = [...dataTemp];
+                if(Array.isArray(cell.lineIds)){
+                  for (let i = 0; i < cell.lineIds.length; i++) {
+                    if (linesHeader[i].name != 'Tempo') {
+                      filteredData = filteredData.filter((item) => item[linesHeader[i].name].id == cell.lineIds[i]);
+                    } else {
+                      date = cell.lineIds[i];
+                    }
+                  }
+                }
+                if(Array.isArray(cell.columnIds)){
+                  for (let i = 0; i < cell.columnIds.length; i++){
+                    if (columnsHeader[i].name != 'Tempo') {
+                      filteredData = filteredData.filter((item) => item[columnsHeader[i].name].id == cell.columnIds[i]);
+                    } else {
+                      date = cell.columnIds[i];
+                    }
+                  }
+                }
+                const value = filteredData[0].values[date - yearBase];
+                data = [...data, value];
+              });
+              return { label: dataSet.label,borderWidth: 1,data: data}
+              
+            })            
+
+            const ctxLine = document.getElementById(chartIdLine);
+            const chart = new Chart(ctxLine, {
+              type: 'line',
+              data: {
+                labels: labelLItems,
+                datasets: datasetsCmp 
+                // [{
+                //   label: '# of Votes',
+                //   data: [12, 19, 3, 5, 2, 3],
+                //   borderWidth: 1
+                // }]
+              },
+              options: {
+                scales: {
+                  y: {
+                    beginAtZero: true
+                  }
                 }
               }
-            }
-            if(Array.isArray(cell.columnIds)){
-              for (let i = 0; i < cell.columnIds.length; i++){
-                if (columnsHeader[i].name != 'Tempo') {
-                  filteredData = filteredData.filter((item) => item[columnsHeader[i].name].id == cell.columnIds[i]);
-                } else {
-                  date = cell.columnIds[i];
+            });
+            setMyChart(chart);
+          }, 100);
+          break;
+        case 'Barra':
+          const chartIdBar = makeid(10);
+          const htmlBar = "<canvas id="+chartIdBar+"></canvas>";
+
+          let scriptBar = '<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>';
+          setTableToCopy(htmlBar + scriptBar);
+          setTableDisplay(htmlBar);
+          
+          setTimeout(
+            () => {
+            let yearBase = startDateBase.year();
+            let datasetsCmp: any[] = datasetsItems.map(dataSet => {
+              let date = 0;
+              let data: any[] = [];
+              dataSet.ids.map((cell: any) => {
+                let filteredData = [...dataTemp];
+                if(Array.isArray(cell.lineIds)){
+                  for (let i = 0; i < cell.lineIds.length; i++) {
+                    if (linesHeader[i].name != 'Tempo') {
+                      filteredData = filteredData.filter((item) => item[linesHeader[i].name].id == cell.lineIds[i]);
+                    } else {
+                      date = cell.lineIds[i];
+                    }
+                  }
+                }
+                if(Array.isArray(cell.columnIds)){
+                  for (let i = 0; i < cell.columnIds.length; i++){
+                    if (columnsHeader[i].name != 'Tempo') {
+                      filteredData = filteredData.filter((item) => item[columnsHeader[i].name].id == cell.columnIds[i]);
+                    } else {
+                      date = cell.columnIds[i];
+                    }
+                  }
+                }
+                const value = filteredData[0].values[date - yearBase];
+                data = [...data, value];
+              });
+              return { label: dataSet.label,borderWidth: 1,data: data}
+              
+            })            
+
+            const ctx = document.getElementById(chartIdBar);
+            const chartBar = new Chart(ctx, {
+              type: 'bar',
+              data: {
+                labels: labelLItems,
+                datasets: datasetsCmp 
+                // [{
+                //   label: '# of Votes',
+                //   data: [12, 19, 3, 5, 2, 3],
+                //   borderWidth: 1
+                // }]
+              },
+              options: {
+                scales: {
+                  y: {
+                    beginAtZero: true
+                  }
                 }
               }
-            }
-            const value = filteredData[0].values[date - yearBase];
-            const cellID = cell.lineIds.join('_') + '-' + cell.columnIds.join('_');
-            const cellDOM: any = document.getElementById(cellID);
-            cellDOM.innerHTML = value;
-          })
-        }
-        , "100");
+            });
+            setMyChart(chartBar);
+          }, 100);
+          break;
+        case 'Pie':
+          const chartIdPie = makeid(10);
+          const htmlPie = "<canvas id="+chartIdPie+"></canvas>";
+
+          let scriptPie = '<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>';
+          setTableToCopy(htmlPie + scriptPie);
+          setTableDisplay(htmlPie);
+          //   scriptLine + = "<script>
+        //   const ctx = document.getElementById('myChart');
+        
+        //   new Chart(ctx, {
+        //     type: 'Pie',
+        //     data: {
+        //       labels: ['Red', 'Blue', 'Yellow', 'Green', 'Purple', 'Orange'],
+        //       datasets: [{
+        //         label: '# of Votes',
+        //         data: [12, 19, 3, 5, 2, 3],
+        //         borderWidth: 1
+        //       }]
+        //     },
+        //     options: {
+        //       scales: {
+        //         y: {
+        //           beginAtZero: true
+        //         }
+        //       }
+        //     }
+        //   });
+        // </script>";
+          setTimeout(
+            () => {
+            let yearBase = startDateBase.year();
+            let datasetsCmp: any[] = datasetsItems.map(dataSet => {
+              let date = 0;
+              let data: any[] = [];
+              dataSet.ids.map((cell: any) => {
+                let filteredData = [...dataTemp];
+                if(Array.isArray(cell.lineIds)){
+                  for (let i = 0; i < cell.lineIds.length; i++) {
+                    if (linesHeader[i].name != 'Tempo') {
+                      filteredData = filteredData.filter((item) => item[linesHeader[i].name].id == cell.lineIds[i]);
+                    } else {
+                      date = cell.lineIds[i];
+                    }
+                  }
+                }
+                if(Array.isArray(cell.columnIds)){
+                  for (let i = 0; i < cell.columnIds.length; i++){
+                    if (columnsHeader[i].name != 'Tempo') {
+                      filteredData = filteredData.filter((item) => item[columnsHeader[i].name].id == cell.columnIds[i]);
+                    } else {
+                      date = cell.columnIds[i];
+                    }
+                  }
+                }
+                const value = filteredData[0].values[date - yearBase];
+                data = [...data, value];
+              });
+              return { label: dataSet.label,borderWidth: 1,data: data}
+              
+            })
+
+            const ctx = document.getElementById(chartIdPie);
+            const chartPie = new Chart(ctx, {
+              type: 'doughnut',
+              data: {
+                labels: labelLItems,
+                datasets: datasetsCmp 
+                // [{
+                //   label: '# of Votes',
+                //   data: [12, 19, 3, 5, 2, 3],
+                //   borderWidth: 1
+                // }]
+              },
+              options: {
+                scales: {
+                  y: {
+                    beginAtZero: true
+                  }
+                }
+              }
+            });
+            setMyChart(chartPie);
+          }, 100);
+          break;
+      
+      }
     }
     else setTableDisplay('');
-  }, [variacoes, startDate, endDate])
+  }, [variacoes, startDate, endDate, radioValue])
 
   useEffect(() => {
     if(isApiReaded)
@@ -564,9 +839,12 @@ function App() {
     )
   }
 
-  const handleOnChange = (e) => {
-    setUrl(e.target.value);
+  const handleOnChange = ({ target: { value } }) => {
+    setUrl(value);
   };
+  const onChangeRadio = ({ target: { value } }) => {
+    setRadioValue(value);    
+  }
 
   return (
     <>
@@ -595,6 +873,18 @@ function App() {
           </div>
         </div>
         <div className='displayTable'>
+          <div>
+            <h4 className='h6'>Tipo</h4>
+            <div style={{ display: 'flex', color: 'black', justifyContent: 'center', marginBottom: '10px' }}>
+              <Radio.Group
+                options={options}
+                onChange={onChangeRadio}
+                value={radioValue}
+                optionType="button"
+                buttonStyle="solid"
+              />
+            </div>
+          </div>
           <h4 className='h6'>Previsualizacao</h4>
           {tableToCopy &&
             <div style={{ display: 'inline-block', position: 'absolute', top: '10px', right: 0}}>

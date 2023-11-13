@@ -36,6 +36,7 @@ function $$SETUP_STATE(hydrateRuntimeState, basePath) {
             ["@vitejs/plugin-react", "virtual:d33977b7a4ab890b13262ec9e4b3083578735ff57970127169ef45056c4a5760b3651943b0aaa53736ae21d56f3fb35b02c15a93256f9de74b282d202326f0e7#npm:4.0.4"],\
             ["antd", "virtual:d33977b7a4ab890b13262ec9e4b3083578735ff57970127169ef45056c4a5760b3651943b0aaa53736ae21d56f3fb35b02c15a93256f9de74b282d202326f0e7#npm:5.9.3"],\
             ["axios", "npm:1.5.0"],\
+            ["chart.js", "npm:4.4.0"],\
             ["dayjs", "npm:1.11.10"],\
             ["eslint", "npm:8.49.0"],\
             ["eslint-plugin-react-hooks", "virtual:d33977b7a4ab890b13262ec9e4b3083578735ff57970127169ef45056c4a5760b3651943b0aaa53736ae21d56f3fb35b02c15a93256f9de74b282d202326f0e7#npm:4.6.0"],\
@@ -3343,6 +3344,15 @@ function $$SETUP_STATE(hydrateRuntimeState, basePath) {
           "linkType": "HARD"\
         }]\
       ]],\
+      ["@kurkle/color", [\
+        ["npm:0.3.2", {\
+          "packageLocation": "./.yarn/cache/@kurkle-color-npm-0.3.2-98f2086013-79e97b31f8.zip/node_modules/@kurkle/color/",\
+          "packageDependencies": [\
+            ["@kurkle/color", "npm:0.3.2"]\
+          ],\
+          "linkType": "HARD"\
+        }]\
+      ]],\
       ["@nicolo-ribaudo/chokidar-2", [\
         ["npm:2.1.8-no-fsevents.3", {\
           "packageLocation": "./.yarn/cache/@nicolo-ribaudo-chokidar-2-npm-2.1.8-no-fsevents.3-79ca8bfcef-ee55cc9241.zip/node_modules/@nicolo-ribaudo/chokidar-2/",\
@@ -4387,6 +4397,16 @@ function $$SETUP_STATE(hydrateRuntimeState, basePath) {
             ["chalk", "npm:4.1.2"],\
             ["ansi-styles", "npm:4.3.0"],\
             ["supports-color", "npm:7.2.0"]\
+          ],\
+          "linkType": "HARD"\
+        }]\
+      ]],\
+      ["chart.js", [\
+        ["npm:4.4.0", {\
+          "packageLocation": "./.yarn/cache/chart.js-npm-4.4.0-ccf7d4ad14-5ee2d99b78.zip/node_modules/chart.js/",\
+          "packageDependencies": [\
+            ["chart.js", "npm:4.4.0"],\
+            ["@kurkle/color", "npm:0.3.2"]\
           ],\
           "linkType": "HARD"\
         }]\
@@ -5577,6 +5597,7 @@ function $$SETUP_STATE(hydrateRuntimeState, basePath) {
             ["@vitejs/plugin-react", "virtual:d33977b7a4ab890b13262ec9e4b3083578735ff57970127169ef45056c4a5760b3651943b0aaa53736ae21d56f3fb35b02c15a93256f9de74b282d202326f0e7#npm:4.0.4"],\
             ["antd", "virtual:d33977b7a4ab890b13262ec9e4b3083578735ff57970127169ef45056c4a5760b3651943b0aaa53736ae21d56f3fb35b02c15a93256f9de74b282d202326f0e7#npm:5.9.3"],\
             ["axios", "npm:1.5.0"],\
+            ["chart.js", "npm:4.4.0"],\
             ["dayjs", "npm:1.11.10"],\
             ["eslint", "npm:8.49.0"],\
             ["eslint-plugin-react-hooks", "virtual:d33977b7a4ab890b13262ec9e4b3083578735ff57970127169ef45056c4a5760b3651943b0aaa53736ae21d56f3fb35b02c15a93256f9de74b282d202326f0e7#npm:4.6.0"],\
