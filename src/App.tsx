@@ -331,9 +331,6 @@ function App() {
                   "}" +
                   
                 "}" +
-                // "const value = filteredData[0].values[cell.date - yearBase];" +
-                // "const cellID = cell.date + '-' + (cell.lineIds.length > 0 ? cell.lineIds.join('_') + '-' : '') + (cell.columnIds.length > 0 ? cell.columnIds.join('_') : '');" +
-                // "const cellDOM = document.getElementById(cellID);" +
                 "const value = filteredData[0].values[date - yearBase];" +
                 "const cellID = cell.lineIds.join('_') + '-' + cell.columnIds.join('_');" +
                 "const cellDOM = document.getElementById(cellID);" +
