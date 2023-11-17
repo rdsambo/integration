@@ -73,7 +73,7 @@ function App() {
       setShowCopied(true);
       setTimeout(() => {
         setShowCopied(false);
-      }, "5000");
+      }, 5000);
     }
   }, [copied])
   const gen = useCallback(() => {
@@ -142,7 +142,7 @@ function App() {
                   name: 'Tempo',
                   variations: tempoVs,
                   variationsID: tempoVs,
-                  orientation: 'L',
+                  orientation: 'C',
                 }];
                 columnsNameByIndex.forEach((nameIndex, index) => {
                   if(nameIndex.length > 1){
