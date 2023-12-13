@@ -9,7 +9,7 @@ import dayjs from 'dayjs';
 import type { RangePickerProps } from 'antd/es/date-picker';
 import {CopyToClipboard} from 'react-copy-to-clipboard';
 import type { RadioChangeEvent } from 'antd';
-import { Radio } from 'antd';
+import { Radio, Select } from 'antd';
 import Chart from 'chart.js/auto';
 
 const { RangePicker } = DatePicker;
@@ -33,7 +33,7 @@ function App() {
   const [tableToCopy, setTableToCopy] = useState<string>("");
   const [showCopied, setShowCopied] = useState(false);
   const [copied, setCopied] = useState<number>(0);
-  const [url, setUrl] = useState();
+  const [url, setUrl] = useState<string>();
   const [variacoes, setVariacoes] = useState<ParamProps[]>([]);
   const [startDate, setStartDate] = useState();
   const [startDateBase, setStartDateBase] = useState();
@@ -45,9 +45,9 @@ function App() {
   const [form] = Form.useForm();
   const selectRef = useRef();
   const [dataTemp, setDataTemp] = useState();
-
   const [radioValue, setRadioValue] = useState('Tabela');
   const [myChart, setMyChart] = useState();
+  // const  [selectedDate, setSelectedDate] = useState(null);
 
   const makeid = (length: number) => {
     let result = '';
@@ -80,8 +80,11 @@ function App() {
     // const url = 'https://mozambique.opendataforafrica.org/api/2.0/data?datasetId=bumjrrg&sexo=T,H,M&prov%C3%ADncia=P1&indicador=I1&idade=T&%C3%A1rea-de-resid%C3%AAncia=T,U,R';
     
     if(url) {
+      // let originalCode = '$.get("/api/2.0/data?datasetId=bumjrrg&província=P1&indicador=I1&idade=T&sexo=T&área-de-residência=T", function(jsonResponse) { ; });';
+      let trimmedUrl = url.replace('$.get("', '').replace('", function(jsonResponse) { ; });', '');
+
       axios
-        .get(url)
+        .get("https://mozambique.opendataforafrica.org" + trimmedUrl)
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         .then((resp: any) => {
           if (resp.status == 200) {
@@ -189,10 +192,10 @@ function App() {
     let haveColumn = false;
     let haveLine = false;
     variacoes.forEach(param => {
-      if(param.orientation == 'C'){
+      if(param.orientation == 'C') {
         haveColumn = true;
       }
-      if(param.orientation == 'L'){
+      if(param.orientation == 'L') {
         haveLine = true;
       }
     });
@@ -348,8 +351,10 @@ function App() {
       
       let body = GenerateBody();
       if(myChart){
-          myChart.clear();
-          myChart.destroy();
+          if(myChart.ctx) {
+            myChart.clear();
+            myChart.destroy();
+          }
       }
       switch(radioValue){
         case 'Tabela':
@@ -359,45 +364,47 @@ function App() {
 
             const scriptStr = 
             "<script>" +
-              "const xhr = new XMLHttpRequest();" +
-              "const url = '" + url + "';" +
-              "let yearBase = " + startDateBase.year() + ";" +
-              "const bodyIDs = " + JSON.stringify(bodyIDs) + ";" +
-              "const linesHeader = " + JSON.stringify(linesHeader) + ";" +
-              "const columnsHeader = " + JSON.stringify(columnsHeader) + ";" +
-              "xhr.open('GET', url, true);" +
-              "xhr.onreadystatechange = function () {" +
-                "if (this.readyState == 4 && this.status == 200) {" +
-                  "const res = JSON.parse(this.responseText);" +
-                  "bodyIDs.forEach(cell => {" +
-                    "let filteredData = [...res.data];" +
-                    "if(Array.isArray(cell.lineIds)){" +
-                      "for (let i = 0; i < cell.lineIds.length; i++) {" +
-                        "if (linesHeader[i].name != 'Tempo') {" +
-                          "filteredData = filteredData.filter((item) => item[linesHeader[i].name].id == cell.lineIds[i]);" +
-                        "} else {" +
-                          "date = cell.lineIds[i];" +
+              "(() => {" +
+                "const xhr = new XMLHttpRequest();" +
+                "const url = '" + url + "';" +
+                "let yearBase = " + startDateBase.year() + ";" +
+                "const bodyIDs = " + JSON.stringify(bodyIDs) + ";" +
+                "const linesHeader = " + JSON.stringify(linesHeader) + ";" +
+                "const columnsHeader = " + JSON.stringify(columnsHeader) + ";" +
+                "xhr.open('GET', url, true);" +
+                "xhr.onreadystatechange = function () {" +
+                  "if (this.readyState == 4 && this.status == 200) {" +
+                    "const res = JSON.parse(this.responseText);" +
+                    "bodyIDs.forEach(cell => {" +
+                      "let filteredData = [...res.data];" +
+                      "if(Array.isArray(cell.lineIds)){" +
+                        "for (let i = 0; i < cell.lineIds.length; i++) {" +
+                          "if (linesHeader[i].name != 'Tempo') {" +
+                            "filteredData = filteredData.filter((item) => item[linesHeader[i].name].id == cell.lineIds[i]);" +
+                          "} else {" +
+                            "date = cell.lineIds[i];" +
+                          "}" +
                         "}" +
                       "}" +
-                    "}" +
-                    "if(Array.isArray(cell.columnIds)){" +
-                      "for (let i = 0; i < cell.columnIds.length; i++){" +
-                        "if (columnsHeader[i].name != 'Tempo') {" +
-                          "filteredData = filteredData.filter((item) => item[columnsHeader[i].name].id == cell.columnIds[i]);" +
-                        "} else {" +
-                          "date = cell.columnIds[i];" +
+                      "if(Array.isArray(cell.columnIds)){" +
+                        "for (let i = 0; i < cell.columnIds.length; i++){" +
+                          "if (columnsHeader[i].name != 'Tempo') {" +
+                            "filteredData = filteredData.filter((item) => item[columnsHeader[i].name].id == cell.columnIds[i]);" +
+                          "} else {" +
+                            "date = cell.columnIds[i];" +
+                          "}" +
                         "}" +
+                        
                       "}" +
-                      
-                    "}" +
-                    "const value = filteredData[0].values[date - yearBase];" +
-                    "const cellID = cell.lineIds.join('_') + '-' + cell.columnIds.join('_');" +
-                    "const cellDOM = document.getElementById(cellID);" +
-                    "cellDOM.innerHTML = value;" +
-                  "})" +
-                "}" +
-              "};" +
-              "xhr.send();" +
+                      "const value = filteredData[0].values[date - yearBase];" +
+                      "const cellID = cell.lineIds.join('_') + '-' + cell.columnIds.join('_');" +
+                      "const cellDOM = document.getElementById(cellID);" +
+                      "cellDOM.innerHTML = value;" +
+                    "})" +
+                  "}" +
+                "};" +
+                "xhr.send();" +
+              "})()" +
             "</script>";
 
             const styles = "<style>.shadow{box-shadow: 0 3px 10px rgb(0 0 0 / 0.2);border-radius:5px;padding:10px;min-height:330px;}#customers{font-family: Arial, Helvetica, sans-serif;border-collapse: collapse;width: 100%;}#customers td {color: #000}#customers td, #customers th {border: 1px solid #ddd;padding: 8px;}#customers tr:nth-child(even){background-color: #f2f2f2;}#customers tr:hover {background-color: #ddd;}#customers th {padding-top: 12px;padding-bottom: 12px;text-align: left;background-color: #dc322c;color: white;}@media only screen and (max-width: 450px){#customers td, #customers th{font-size:9px;}.shadow{min-height:0px;}}.card {box-shadow: 0 4px 8px 0 rgba(0,0,0,0.2);transition: 0.3s;width: 100%;}.card:hover {box-shadow: 0 8px 16px 0 rgba(0,0,0,0.2);}</style>\n";
@@ -438,10 +445,72 @@ function App() {
           break;
         case 'Linha':
           const chartIdLine = makeid(10);
-          const htmlLine = "<canvas id="+chartIdLine+"></canvas>";
+          const htmlLine = "<canvas id=\""+chartIdLine+"\"></canvas>";
 
-          let scriptLine = '<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>';
-          setTableToCopy(htmlLine + scriptLine);
+          let scriptStrLine = '<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>';
+          scriptStrLine += 
+            "<script>" +
+              "const xhr = new XMLHttpRequest();" +
+              "const url = '" + url + "';" +
+              "let yearBase = " + startDateBase.year() + ";" +
+              "const bodyIDs = " + JSON.stringify(bodyIDs) + ";" +
+              "const linesHeader = " + JSON.stringify(linesHeader) + ";" +
+              "const columnsHeader = " + JSON.stringify(columnsHeader) + ";" +
+              "const datasetsItems = "+JSON.stringify(datasetsItems)+";" +
+              "const labelLItems = "+JSON.stringify(labelLItems)+";" +
+              "const chartIdLine = '"+ chartIdLine + "';" +
+              "xhr.open('GET', url, true);" +
+              "xhr.onreadystatechange = function () {" +
+                "if (this.readyState == 4 && this.status == 200) {" +
+                  "const res = JSON.parse(this.responseText);" +
+                  "let datasetsCmp = datasetsItems.map(dataSet => {" +
+                    "let date = 0;" +
+                    "let data = [];" +
+                    "dataSet.ids.map((cell) => {" +
+                      "let filteredData = [...res.data];" +
+                      "if(Array.isArray(cell.lineIds)){" +
+                        "for (let i = 0; i < cell.lineIds.length; i++) {" +
+                          "if (linesHeader[i].name != 'Tempo') {" +
+                            "filteredData = filteredData.filter((item) => item[linesHeader[i].name].id == cell.lineIds[i]);" +
+                          "} else {" +
+                            "date = cell.lineIds[i];" +
+                          "}" +
+                        "}" +
+                      "}" +
+                      "if(Array.isArray(cell.columnIds)){" +
+                        "for (let i = 0; i < cell.columnIds.length; i++){" +
+                          "if (columnsHeader[i].name != 'Tempo') {" +
+                            "filteredData = filteredData.filter((item) => item[columnsHeader[i].name].id == cell.columnIds[i]);" +
+                          "} else {" +
+                            "date = cell.columnIds[i];" +
+                          "}" +
+                        "}" +
+                      "}" +
+                      "const value = filteredData[0].values[date - yearBase];" +
+                      "data = [...data, value];" +
+                    "});" +
+                    "return { label: dataSet.label,borderWidth: 1,data: data}" +
+                  "});" +
+                  "const ctxLine = document.getElementById(chartIdLine);" +
+                  "const chart = new Chart(ctxLine, {" +
+                    "type: 'line'," +
+                    "data: {" +
+                      "labels: labelLItems," +
+                      "datasets: datasetsCmp" +
+                    "}," +
+                    "options: {" +
+                      "scales: {" +
+                        "y: {" +
+                          "beginAtZero: true" +
+                        "}" +
+                      "}" +
+                    "}" +
+                  "});" +
+                "}" +
+              "};" +
+              "xhr.send();" +
+            "</script>";
+          setTableToCopy(htmlLine + scriptStrLine);
           setTableDisplay(htmlLine);
           setTimeout(
             () => {
@@ -501,10 +570,74 @@ function App() {
           break;
         case 'Barra':
           const chartIdBar = makeid(10);
-          const htmlBar = "<canvas id="+chartIdBar+"></canvas>";
+          const htmlBar = "<canvas id=\""+chartIdBar+"\"></canvas>";
 
-          let scriptBar = '<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>';
-          setTableToCopy(htmlBar + scriptBar);
+          let scriptStrBar = '<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>';
+          scriptStrBar += 
+            "<script>" +
+              "(() => {" +
+                "const xhr = new XMLHttpRequest();" +
+                "const url = '" + url + "';" +
+                "let yearBase = " + startDateBase.year() + ";" +
+                "const bodyIDs = " + JSON.stringify(bodyIDs) + ";" +
+                "const linesHeader = " + JSON.stringify(linesHeader) + ";" +
+                "const columnsHeader = " + JSON.stringify(columnsHeader) + ";" +
+                "const datasetsItems = "+JSON.stringify(datasetsItems)+";" +
+                "const labelLItems = "+JSON.stringify(labelLItems)+";" +
+                "const chartIdLine = '"+ chartIdBar + "';" +
+                "xhr.open('GET', url, true);" +
+                "xhr.onreadystatechange = function () {" +
+                  "if (this.readyState == 4 && this.status == 200) {" +
+                    "const res = JSON.parse(this.responseText);" +
+                    "let datasetsCmp = datasetsItems.map(dataSet => {" +
+                      "let date = 0;" +
+                      "let data = [];" +
+                      "dataSet.ids.map((cell) => {" +
+                        "let filteredData = [...res.data];" +
+                        "if(Array.isArray(cell.lineIds)){" +
+                          "for (let i = 0; i < cell.lineIds.length; i++) {" +
+                            "if (linesHeader[i].name != 'Tempo') {" +
+                              "filteredData = filteredData.filter((item) => item[linesHeader[i].name].id == cell.lineIds[i]);" +
+                            "} else {" +
+                              "date = cell.lineIds[i];" +
+                            "}" +
+                          "}" +
+                        "}" +
+                        "if(Array.isArray(cell.columnIds)){" +
+                          "for (let i = 0; i < cell.columnIds.length; i++){" +
+                            "if (columnsHeader[i].name != 'Tempo') {" +
+                              "filteredData = filteredData.filter((item) => item[columnsHeader[i].name].id == cell.columnIds[i]);" +
+                            "} else {" +
+                              "date = cell.columnIds[i];" +
+                            "}" +
+                          "}" +
+                        "}" +
+                        "const value = filteredData[0].values[date - yearBase];" +
+                        "data = [...data, value];" +
+                      "});" +
+                      "return { label: dataSet.label,borderWidth: 1,data: data}" +
+                    "});" +
+                    "const ctxLine = document.getElementById(chartIdLine);" +
+                    "const chart = new Chart(ctxLine, {" +
+                      "type: 'bar'," +
+                      "data: {" +
+                        "labels: labelLItems," +
+                        "datasets: datasetsCmp" +
+                      "}," +
+                      "options: {" +
+                        "scales: {" +
+                          "y: {" +
+                            "beginAtZero: true" +
+                          "}" +
+                        "}" +
+                      "}" +
+                    "});" +
+                  "}" +
+                "};" +
+                "xhr.send();" +
+              "})()" +
+            "</script>";
+          setTableToCopy(htmlBar + scriptStrBar);
           setTableDisplay(htmlBar);
           
           setTimeout(
@@ -546,11 +679,6 @@ function App() {
               data: {
                 labels: labelLItems,
                 datasets: datasetsCmp 
-                // [{
-                //   label: '# of Votes',
-                //   data: [12, 19, 3, 5, 2, 3],
-                //   borderWidth: 1
-                // }]
               },
               options: {
                 scales: {
@@ -565,33 +693,75 @@ function App() {
           break;
         case 'Pie':
           const chartIdPie = makeid(10);
-          const htmlPie = "<canvas id="+chartIdPie+"></canvas>";
+          const htmlPie = "<canvas id=\""+chartIdPie+"\"></canvas>";
 
-          let scriptPie = '<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>';
-          setTableToCopy(htmlPie + scriptPie);
+          let scriptStrPie = '<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>';
+          scriptStrPie += 
+            "<script>" +
+              "(() => {" +
+                "const xhr = new XMLHttpRequest();" +
+                "const url = '" + url + "';" +
+                "let yearBase = " + startDateBase.year() + ";" +
+                "const bodyIDs = " + JSON.stringify(bodyIDs) + ";" +
+                "const linesHeader = " + JSON.stringify(linesHeader) + ";" +
+                "const columnsHeader = " + JSON.stringify(columnsHeader) + ";" +
+                "const datasetsItems = "+JSON.stringify(datasetsItems)+";" +
+                "const labelLItems = "+JSON.stringify(labelLItems)+";" +
+                "const chartIdPie = '"+ chartIdPie + "';" +
+                "xhr.open('GET', url, true);" +
+                "xhr.onreadystatechange = function () {" +
+                  "if (this.readyState == 4 && this.status == 200) {" +
+                    "const res = JSON.parse(this.responseText);" +
+                    "let datasetsCmp = datasetsItems.map(dataSet => {" +
+                      "let date = 0;" +
+                      "let data = [];" +
+                      "dataSet.ids.map((cell) => {" +
+                        "let filteredData = [...res.data];" +
+                        "if(Array.isArray(cell.lineIds)){" +
+                          "for (let i = 0; i < cell.lineIds.length; i++) {" +
+                            "if (linesHeader[i].name != 'Tempo') {" +
+                              "filteredData = filteredData.filter((item) => item[linesHeader[i].name].id == cell.lineIds[i]);" +
+                            "} else {" +
+                              "date = cell.lineIds[i];" +
+                            "}" +
+                          "}" +
+                        "}" +
+                        "if(Array.isArray(cell.columnIds)){" +
+                          "for (let i = 0; i < cell.columnIds.length; i++){" +
+                            "if (columnsHeader[i].name != 'Tempo') {" +
+                              "filteredData = filteredData.filter((item) => item[columnsHeader[i].name].id == cell.columnIds[i]);" +
+                            "} else {" +
+                              "date = cell.columnIds[i];" +
+                            "}" +
+                          "}" +
+                        "}" +
+                        "const value = filteredData[0].values[date - yearBase];" +
+                        "data = [...data, value];" +
+                      "});" +
+                      "return { label: dataSet.label,borderWidth: 1,data: data}" +
+                    "});" +
+                    "const ctxPie = document.getElementById(chartIdPie);" +
+                    "const chart = new Chart(ctxPie, {" +
+                      "type: 'pie'," +
+                      "data: {" +
+                        "labels: labelLItems," +
+                        "datasets: datasetsCmp" +
+                      "}," +
+                      "options: {" +
+                        "scales: {" +
+                          "y: {" +
+                            "beginAtZero: true" +
+                          "}" +
+                        "}" +
+                      "}" +
+                    "});" +
+                  "}" +
+                "};" +
+                "xhr.send();" +
+              "})()" +
+            "</script>";
+          setTableToCopy(htmlPie + scriptStrPie);
           setTableDisplay(htmlPie);
-          //   scriptLine + = "<script>
-        //   const ctx = document.getElementById('myChart');
-        
-        //   new Chart(ctx, {
-        //     type: 'Pie',
-        //     data: {
-        //       labels: ['Red', 'Blue', 'Yellow', 'Green', 'Purple', 'Orange'],
-        //       datasets: [{
-        //         label: '# of Votes',
-        //         data: [12, 19, 3, 5, 2, 3],
-        //         borderWidth: 1
-        //       }]
-        //     },
-        //     options: {
-        //       scales: {
-        //         y: {
-        //           beginAtZero: true
-        //         }
-        //       }
-        //     }
-        //   });
-        // </script>";
           setTimeout(
             () => {
             let yearBase = startDateBase.year();
@@ -627,15 +797,10 @@ function App() {
 
             const ctx = document.getElementById(chartIdPie);
             const chartPie = new Chart(ctx, {
-              type: 'doughnut',
+              type: 'pie',
               data: {
                 labels: labelLItems,
-                datasets: datasetsCmp 
-                // [{
-                //   label: '# of Votes',
-                //   data: [12, 19, 3, 5, 2, 3],
-                //   borderWidth: 1
-                // }]
+                datasets: datasetsCmp
               },
               options: {
                 scales: {
@@ -648,7 +813,6 @@ function App() {
             setMyChart(chartPie);
           }, 100);
           break;
-      
       }
     }
     else setTableDisplay('');
@@ -657,9 +821,50 @@ function App() {
   useEffect(() => {
     if(isApiReaded)
     {
-      form.setFieldValue('date', [startDate, endDate]);                    
+      form.setFieldValue('date', [startDate, endDate]);
+      form.setFieldValue('date_single', startDate);
+
+      if(radioValue == 'Pie') {
+        let variacoesLocal: any[] = [...variacoes];
+        variacoesLocal = variacoesLocal.map((item) => {
+          if (item.name == 'Tempo'){
+            // tempo.variations = [startDateBase.year()];
+            // let variac = variacoes;
+            // variac[index] = tempo;
+            // setVariacoes(variac);
+            // setSelectedDate(startDateBase.year());
+            return {
+              name: item.name,
+              variations: [startDateBase.year()],
+              variationsID: [startDateBase.year()],
+              orientation: 'L',
+            }
+          } else {
+            return {
+              name: item.name,
+              variations: item.variations,
+              variationsID: item.variationsID,
+              orientation: 'C',
+            }
+          }
+        });
+        setVariacoes(variacoesLocal);
+
+        // if(selectedDate == null) {
+        //   const index = variacoes.findIndex((item: any) => item.name == 'Tempo');
+        //   if(index){
+        //     let tempo = {...variacoes[index]};
+        //     tempo.variations = [startDateBase.year()];
+        //     let variac = variacoes;
+        //     variac[index] = tempo;
+        //     setVariacoes(variac);
+        //     setSelectedDate(startDateBase.year());
+        //   } 
+        // }
+      }
     }
-  }, [isApiReaded])
+  }, [isApiReaded, radioValue])
+
   const onFinish = () => {
     gen();
   };
@@ -838,12 +1043,109 @@ function App() {
       </div>
     )
   }
+  useEffect(() => {
+  }, [variacoes])
+  const renderItemPie = (param: ParamProps, index) => {
+    if(param.name == 'Tempo') {
+      let options: any[] = [];
+      for(let i = startDateBase.year(); i <= endDateBase.year(); i++) {
+        options = [ ...options, {
+          value: i,
+          label: i
+        }]
+      }
+      return (
+        <div key={index}>
+          <>
+            <S.Item>
+              <b>{param.name}</b>
+              {/* {param.name != 'Tempo' &&
+                <Space direction="vertical">
+                  <Space wrap>
+                    <>
+                      <Button size={'small'} style={{ padding: -10 }} onClick={() => handleOnL(index)} type={ param.orientation == 'L' ? 'primary': 'default'} shape="circle">
+                        I
+                      </Button>
+                      <Button size={'small'} disabled={param.name == 'Tempo' ? (verticalLength == 1 ? false : true) : false } onClick={() => handleOnO(index)} type={ param.orientation == 'O' ? 'primary': 'default'} shape="circle">
+                        O
+                      </Button>
+                    </>
+                  </Space>
+                </Space>
+              } */}
+            </S.Item>
+            {param.name == 'Tempo' &&
+              <Form form={form} name='Date'>              
+                <Form.Item
+                    name={'date_single'}
+                    style={{ marginTop: 5 }}
+                >
+                  <DatePicker 
+                    onChange={(e) => {
+                      const selectedDate = dayjs(e.format('YYYY-MM-DDTHH:mm:ss'));
+                      if(selectedDate && selectedDate != startDate) setStartDate(selectedDate);
+                      if(selectedDate && selectedDate != endDate) setEndDate(selectedDate);
+  
+                      let duration = 12;
+                      // if(interval != 12){
+                      //   let monthDiff = 0;
+                      //   duration += monthDiff;
+                      // }
+                      let verticalL = duration/interval;
+                      // if(verticalL > 1){
+                      //   const tempoL = {...param};
+                      //   tempoL.orientation = 'L';
+                      //   setTempo(tempoL);
+                      // }
+                      setVerticalLength(verticalL);
+                      var tempoVs: any[] = [];
+                      // if(start.year() == end.year()) {
+                      //   tempoVs = [start.year()];
+                      // }
+                      // else
+                      for( let i = selectedDate.year(); i <= selectedDate.year(); i += interval / 12) {
+                        tempoVs = [...tempoVs, i];
+                      }
+                      
+                      const index = variacoes.findIndex((item: any) => item.name == 'Tempo');
+                      let tempo = variacoes[index];
+                      tempo.variations = tempoVs;
+                      let variac = variacoes;
+                      variac[index] = tempo;
+                      setVariacoes(variac);
+                    }}
+                    picker={interval == 12 ? 'year' : 'month'}
+                    style={{ marginTop: 10}}
+                    disabledDate={(current) => disabledDate(current, startDateBase, endDateBase)}
+                  />
+                  {/* <Select
+                    defaultValue={startDateBase.year()}
+                    style={{ width: '80%' }}
+                    onChange={({ target: { value} }) => {
+                      // const index = variacoes.findIndex((item: any) => item.name == 'Tempo');
+                      let tempo = {...param};
+                      tempo.variations = [value];
+                      let variac = variacoes;
+                      variac[index] = tempo;
+                      setVariacoes(variac);
+                    }}
+                    options={options}
+                  /> */}
+                </Form.Item>
+              </Form>
+            }
+          </>
+        </div>
+      )
+    }
+    else return <div key={index} className={'sr-only'}></div>;
+  }
 
   const handleOnChange = ({ target: { value } }) => {
     setUrl(value);
-  };
+  }
   const onChangeRadio = ({ target: { value } }) => {
-    setRadioValue(value);    
+    setRadioValue(value);
   }
 
   return (
@@ -864,16 +1166,6 @@ function App() {
             </div>
           </div>
           <div className='code'>
-            <h4 className='h6'>Parametros</h4>
-            {isApiReaded && 
-            <>
-              {variacoes.map(renderItem)}
-            </>
-            }
-          </div>
-        </div>
-        <div className='displayTable'>
-          <div>
             <h4 className='h6'>Tipo</h4>
             <div style={{ display: 'flex', color: 'black', justifyContent: 'center', marginBottom: '10px' }}>
               <Radio.Group
@@ -885,6 +1177,17 @@ function App() {
               />
             </div>
           </div>
+          <div className='code'>
+            <h4 className='h6'>Parametros</h4>
+            {isApiReaded && 
+            <>
+              {(radioValue == 'Tabela' || radioValue == 'Linha' || radioValue == 'Barra') && variacoes.map(renderItem)}
+              {(radioValue == 'Pie') && variacoes.map(renderItemPie)}
+            </>
+            }
+          </div>
+        </div>
+        <div className='displayTable'>
           <h4 className='h6'>Previsualizacao</h4>
           {tableToCopy &&
             <div style={{ display: 'inline-block', position: 'absolute', top: '10px', right: 0}}>
