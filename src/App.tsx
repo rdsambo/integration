@@ -34,6 +34,7 @@ function App() {
   const [showCopied, setShowCopied] = useState(false);
   const [copied, setCopied] = useState<number>(0);
   const [url, setUrl] = useState<string>();
+  const [enteredUrl, setEnteredUrl] = useState<string>();
   const [variacoes, setVariacoes] = useState<ParamProps[]>([]);
   const [startDate, setStartDate] = useState();
   const [startDateBase, setStartDateBase] = useState();
@@ -79,12 +80,13 @@ function App() {
   const gen = useCallback(() => {
     // const url = 'https://mozambique.opendataforafrica.org/api/2.0/data?datasetId=bumjrrg&sexo=T,H,M&prov%C3%ADncia=P1&indicador=I1&idade=T&%C3%A1rea-de-resid%C3%AAncia=T,U,R';
     
-    if(url) {
+    if(enteredUrl) {
       // let originalCode = '$.get("/api/2.0/data?datasetId=bumjrrg&província=P1&indicador=I1&idade=T&sexo=T&área-de-residência=T", function(jsonResponse) { ; });';
-      let trimmedUrl = url.replace('$.get("', '').replace('", function(jsonResponse) { ; });', '');
-
+      let trimmedUrl = enteredUrl.replace('$.get("', '').replace('", function(jsonResponse) { ; });', '');
+      const url = "https://mozambique.opendataforafrica.org" + trimmedUrl;
+      setUrl(url);
       axios
-        .get("https://mozambique.opendataforafrica.org" + trimmedUrl)
+        .get(url)
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         .then((resp: any) => {
           if (resp.status == 200) {
@@ -186,7 +188,7 @@ function App() {
           }
         });
     }
-  }, [url]);
+  }, [enteredUrl]);
   
   useEffect(() => {
     let haveColumn = false;
@@ -1142,7 +1144,7 @@ function App() {
   }
 
   const handleOnChange = ({ target: { value } }) => {
-    setUrl(value);
+    setEnteredUrl(value);
   }
   const onChangeRadio = ({ target: { value } }) => {
     setRadioValue(value);
